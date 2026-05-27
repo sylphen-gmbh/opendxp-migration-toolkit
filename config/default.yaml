@@ -1,0 +1,142 @@
+# Override built-in defaults. Unspecified keys keep script defaults.
+
+scan_paths:
+  - templates
+  - public/static/css
+  - src
+  - config
+
+exclude_globs:
+  - vendor/**
+  - var/**
+  - node_modules/**
+  - web/js/fos_js_routes.js
+  - "**/fos_js_routes.js"
+  - src/Migrations/**
+  - "**/ckeditor-plugins/**"
+
+manual_review_substrings:
+  - Pimcore-Schulung
+  - demo.pimcore.org
+  - pimcore.com
+  - pimcore.org
+
+directory_renames:
+  - from: src/Resources/config/pimcore
+    to: src/Resources/config/opendxp
+  - from: config/pimcore
+    to: config/opendxp
+  - from: src/Resources/public/pimcore
+    to: src/Resources/public/opendxp
+
+audit_patterns:
+  - name: twig-functions
+    pattern: '\bpimcore_[a-zA-Z0-9_]+'
+  - name: php-namespace
+    pattern: '\bPimcore\\'
+  - name: php-constants
+    pattern: '\bPIMCORE_[A-Z0-9_]+'
+  - name: config-blocks
+    pattern: '\bpimcore_[a-zA-Z0-9_-]+:'
+  - name: css-area-classes
+    pattern: '\bpimcore_area_[a-zA-Z0-9_-]+'
+  - name: css-tag-classes
+    pattern: '\bpimcore_tag_[a-zA-Z0-9_-]+'
+  - name: css-wysiwyg-class
+    pattern: '\bpimcore_wysiwyg\b'
+  - name: commands
+    pattern: '\bpimcore:[a-zA-Z0-9:-]+'
+  - name: js-global
+    pattern: '\bpimcore\.[a-zA-Z]'
+  - name: config-path
+    pattern: '(?:^|["''])(?:src/Resources/)?config/pimcore(?:/|["'']|$)'
+  - name: portal-layout
+    pattern: '\bpimcore\.layout\.'
+
+area_class_sources:
+  templates_glob: "**/*.twig"
+  template_pattern: '\bopendxp_area_[a-zA-Z0-9_-]+'
+  css_glob: "**/*.css"
+  css_patterns:
+    - '\bopendxp_area_[a-zA-Z0-9_-]+'
+    - '\bpimcore_area_[a-zA-Z0-9_-]+'
+
+replacement_groups:
+  - name: twig
+    globs:
+      - "**/*.twig"
+    rules:
+      - from: pimcore_
+        to: opendxp_
+
+  - name: css
+    globs:
+      - "**/*.css"
+    rules:
+      - from: pimcore_area_
+        to: opendxp_area_
+      - from: pimcore_tag_
+        to: opendxp_editable_
+      - from: pimcore_wysiwyg
+        to: opendxp_editable_wysiwyg
+
+  - name: php
+    globs:
+      - "**/*.php"
+    rules:
+      - from: Pimcore\
+        to: OpenDxp\
+      - from: PIMCORE_
+        to: OPENDXP_
+
+  - name: yaml
+    globs:
+      - "**/*.yaml"
+      - "**/*.yml"
+    rules:
+      - from: pimcore_
+        to: opendxp_
+
+  - name: js
+    globs:
+      - "**/*.js"
+    rules:
+      - from: pimcore.layout.portlets.
+        to: opendxp.layout.portlets.
+      - from: pimcore.layout.
+        to: opendxp.layout.
+      - from: pimcore.document
+        to: opendxp.document
+      - from: pimcore.object
+        to: opendxp.object
+      - from: typeof pimcore
+        to: typeof opendxp
+      - from: pimcore.
+        to: opendxp.
+
+  - name: paths
+    globs:
+      - "**/*"
+    rules:
+      - from: pimcore.layout.portlets.
+        to: opendxp.layout.portlets.
+      - from: pimcore.layout.
+        to: opendxp.layout.
+      - from: src/Resources/config/pimcore/
+        to: src/Resources/config/opendxp/
+      - from: src/Resources/config/pimcore
+        to: src/Resources/config/opendxp
+      - from: config/pimcore/
+        to: config/opendxp/
+      - from: config/pimcore
+        to: config/opendxp
+      - from: src/Resources/public/pimcore/
+        to: src/Resources/public/opendxp/
+      - from: src/Resources/public/pimcore
+        to: src/Resources/public/opendxp
+      - from: /bundles/app/pimcore/
+        to: /bundles/app/opendxp/
+      - from: /bundles/pimcoreadmin/
+        to: /bundles/opendxpadmin/
+      - from: /bundles/pimcore/
+        to: /bundles/opendxp/

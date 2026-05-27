@@ -1,0 +1,139 @@
+# Class definitions, var/config, src/Resources and config/
+
+scan_paths:
+  - var/classes
+  - var/config
+  - src/Resources
+  - config
+
+exclude_globs:
+  - vendor/**
+  - var/cache/**
+  - var/tmp/**
+  - src/Migrations/**
+  - "**/ckeditor-plugins/**"
+
+manual_review_substrings:
+  - Pimcore-Schulung
+  - demo.pimcore.org
+  - pimcore.com
+  - pimcore.org
+
+directory_renames:
+  - from: src/Resources/config/pimcore
+    to: src/Resources/config/opendxp
+  - from: config/pimcore
+    to: config/opendxp
+  - from: src/Resources/public/pimcore
+    to: src/Resources/public/opendxp
+
+audit_patterns:
+  - name: php-model-namespace
+    pattern: '\bPimcore\\Model\\'
+  - name: php-bundle-namespace
+    pattern: '\bPimcore\\Bundle\\'
+  - name: php-facade
+    pattern: '\\Pimcore::'
+  - name: class-layout-root
+    pattern: '\bpimcore_root\b'
+  - name: admin-icon-path
+    pattern: '/bundles/pimcoreadmin/'
+  - name: bundle-asset-path
+    pattern: '/bundles/pimcore/'
+  - name: app-bundle-js-path
+    pattern: '/bundles/app/pimcore/'
+  - name: admin-icon-class
+    pattern: '\bpimcore_icon_[a-zA-Z0-9_-]+'
+  - name: portal-portlets
+    pattern: '\bpimcore\.layout\.portlets\.'
+  - name: portal-layout
+    pattern: '\bpimcore\.layout\.'
+  - name: js-global
+    pattern: '\bpimcore\.[a-zA-Z]'
+  - name: config-path
+    pattern: '(?:^|["''])(?:src/Resources/)?config/pimcore(?:/|["'']|$)'
+  - name: resources-public-path
+    pattern: 'src/Resources/public/pimcore(?:/|$)'
+  - name: return-model-namespace
+    pattern: 'return Pimcore\\Model\\'
+
+replacement_rules:
+  - name: php-model-namespace
+    from: Pimcore\Model\
+    to: OpenDxp\Model\
+
+  - name: php-bundle-namespace
+    from: Pimcore\Bundle\
+    to: OpenDxp\Bundle\
+
+  - name: php-facade
+    from: \Pimcore::
+    to: \OpenDxp::
+
+  - name: class-layout-root
+    from: pimcore_root
+    to: opendxp_root
+
+  - name: admin-icon-class-prefix
+    from: pimcore_icon_
+    to: opendxp_icon_
+
+  - name: portal-portlets
+    from: pimcore.layout.portlets.
+    to: opendxp.layout.portlets.
+
+  - name: portal-layout
+    from: pimcore.layout.
+    to: opendxp.layout.
+
+  - name: resources-config-path
+    from: src/Resources/config/pimcore/
+    to: src/Resources/config/opendxp/
+
+  - name: resources-config-path-no-slash
+    from: src/Resources/config/pimcore
+    to: src/Resources/config/opendxp
+
+  - name: app-config-path
+    from: config/pimcore/
+    to: config/opendxp/
+
+  - name: app-config-path-no-slash
+    from: config/pimcore
+    to: config/opendxp
+
+  - name: resources-public-path
+    from: src/Resources/public/pimcore/
+    to: src/Resources/public/opendxp/
+
+  - name: resources-public-path-no-slash
+    from: src/Resources/public/pimcore
+    to: src/Resources/public/opendxp
+
+  - name: app-bundle-js-path
+    from: /bundles/app/pimcore/
+    to: /bundles/app/opendxp/
+
+  - name: admin-icon-path
+    from: /bundles/pimcoreadmin/
+    to: /bundles/opendxpadmin/
+
+  - name: bundle-asset-path
+    from: /bundles/pimcore/
+    to: /bundles/opendxp/
+
+  - name: js-document
+    from: pimcore.document
+    to: opendxp.document
+
+  - name: js-object
+    from: pimcore.object
+    to: opendxp.object
+
+  - name: js-typeof
+    from: typeof pimcore
+    to: typeof opendxp
+
+  - name: js-global
+    from: pimcore.
+    to: opendxp.
