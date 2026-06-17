@@ -1,0 +1,49 @@
+# Internal GitLab pipeline.
+#
+# `main` is owned by GitHub (PRs are merged there and pulled back into GitLab),
+# so this pipeline NEVER pushes `main`. It only publishes the refs we choose:
+#   - branches named  public/*
+#   - tags
+# to the public GitHub repo, WITHOUT --force, so GitHub merges are never clobbered.
+#
+# Required CI/CD variable (Settings -> CI/CD -> Variables, Protected + Masked):
+#   GITHUB_TOKEN  -> GitHub PAT with `repo` scope (or fine-grained: Contents RW)
+
+stages:
+  - test
+  - publish
+
+variables:
+  GITHUB_REPO: "github.com/sylphen-gmbh/opendxp-migration-toolkit.git"
+
+# Byte-compile + CLI smoke tests, mirrors the GitHub Actions checks so internal
+# pushes are validated before anything reaches GitHub.
+test:
+  stage: test
+  image: python:3.12-alpine
+  before_script:
+    - apk add --no-cache git
+  script:
+    - python -m compileall -q .
+    - mkdir -p fixture/pimcore/templates fixture/pimcore/src fixture/pimcore/config fixture/pimcore/var/classes/DataObject
+    - printf '<div>{{ content }}</div>\n' > fixture/pimcore/templates/page.html.twig
+    - printf '<?php\nnamespace App;\nclass Foo {}\n' > fixture/pimcore/src/Foo.php
+    - printf 'framework:\n  secret: test\n' > fixture/pimcore/config/config.yaml
+    - printf '<?php\nreturn [];\n' > fixture/pimcore/var/classes/DataObject/Foo.php
+    - python opendxp_preflight.py fixture/pimcore
+    - python opendxp_migrate.py audit fixture/pimcore
+    - python opendxp_migrate_definitions.py audit fixture/pimcore
+    - python opendxp_migrate_db.py emit-sql > /dev/null
+
+# Publish the current ref to GitHub. Runs only for public/* branches and tags.
+publish-to-github:
+  stage: publish
+  image: alpine:3.20
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^public\//'
+    - if: '$CI_COMMIT_TAG'
+  before_script:
+    - apk add --no-cache git
+  script:
+    - test -n "$GITHUB_TOKEN" || { echo "GITHUB_TOKEN is not set"; exit 1; }
+    - git push "https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}" "HEAD:${CI_COMMIT_REF_NAME}"

@@ -12,6 +12,9 @@ project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - `LICENSE` file (MIT).
 - `CONTRIBUTING.md` with development and PR guidelines.
 - GitHub Actions CI: byte-compile + CLI smoke tests on Python 3.9–3.12.
+- `PUBLISHING.md` plus a `pre-push` guard (`.githooks/`) and `.gitlab-ci.yml`
+  describing the internal GitLab ↔ public GitHub workflow (selective publishing
+  of `main`, `public/*` and tags).
 
 ## [0.1.0]
 

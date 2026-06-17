@@ -4,6 +4,10 @@ Thanks for your interest in improving the OpenDXP Migration Toolkit! This is a
 small, dependency-light helper toolkit — contributions that keep it simple and
 reviewable are very welcome.
 
+To contribute, fork this repository on GitHub, create a branch in your fork, and
+open a pull request against `main`. Maintainers: the internal GitLab ↔ public
+GitHub branching and release workflow is documented in [`PUBLISHING.md`](PUBLISHING.md).
+
 ## Ground rules
 
 - **Keep it standard-library-first.** The scripts must run with plain Python 3.9+
@@ -17,7 +21,7 @@ reviewable are very welcome.
 ## Development setup
 
 ```bash
-git clone https://github.com/sylphen/opendxp-migration-toolkit.git
+git clone https://github.com/sylphen-gmbh/opendxp-migration-toolkit.git
 cd opendxp-migration-toolkit
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt   # only needed for custom --config
