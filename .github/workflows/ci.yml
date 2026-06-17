@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  smoke:
+    name: byte-compile + CLI smoke tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Byte-compile all scripts
+        run: python -m compileall -q .
+
+      - name: Prepare throwaway fixture (clean project tree)
+        run: |
+          mkdir -p fixture/pimcore/templates \
+                   fixture/pimcore/src \
+                   fixture/pimcore/config \
+                   fixture/pimcore/var/classes/DataObject
+          printf '<div>{{ content }}</div>\n' > fixture/pimcore/templates/page.html.twig
+          printf '<?php\nnamespace App;\nclass Foo {}\n' > fixture/pimcore/src/Foo.php
+          printf 'framework:\n  secret: test\n' > fixture/pimcore/config/config.yaml
+          printf '<?php\nreturn [];\n' > fixture/pimcore/var/classes/DataObject/Foo.php
+
+      - name: Smoke test — preflight (read-only, no FAIL on clean tree)
+        run: python opendxp_preflight.py fixture/pimcore
+
+      - name: Smoke test — migrate audit (expects clean, exit 0)
+        run: python opendxp_migrate.py audit fixture/pimcore
+
+      - name: Smoke test — definitions audit (expects clean, exit 0)
+        run: python opendxp_migrate_definitions.py audit fixture/pimcore
+
+      - name: Smoke test — emit SQL
+        run: python opendxp_migrate_db.py emit-sql > /dev/null
+
+      - name: Smoke test — CLI help screens
+        run: |
+          python opendxp_preflight.py --help
+          python opendxp_migrate.py --help
+          python opendxp_migrate_definitions.py --help
+          python opendxp_migrate_db.py --help

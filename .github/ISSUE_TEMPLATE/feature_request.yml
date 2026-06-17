@@ -1,0 +1,20 @@
+name: Feature request / new rule
+description: Propose a new replacement rule or capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the Pimcore → OpenDXP case that is not covered yet.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed rule / change
+      description: >
+        If it is a rename rule, include the `from` → `to` mapping and the file
+        scope it should apply to.
+    validations:
+      required: false

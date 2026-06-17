@@ -5,6 +5,8 @@ scan_paths:
   - public/static/css
   - src
   - config
+  - bin            # bin/console (no .php extension -> see bootstrap group)
+  - public/index.php
 
 exclude_globs:
   - vendor/**
@@ -14,6 +16,9 @@ exclude_globs:
   - "**/fos_js_routes.js"
   - src/Migrations/**
   - "**/ckeditor-plugins/**"
+  # Contains the literal needle 'Pimcore\' on purpose (it is the version-file
+  # migration command) - must not be rewritten by a rename run.
+  - "**/MigrateVersionFilesCommand.php"
 
 manual_review_substrings:
   - Pimcore-Schulung
@@ -66,6 +71,8 @@ replacement_groups:
     globs:
       - "**/*.twig"
     rules:
+      - from: 'Pimcore\'
+        to: 'OpenDxp\'
       - from: pimcore_
         to: opendxp_
 
@@ -94,8 +101,16 @@ replacement_groups:
       - "**/*.yaml"
       - "**/*.yml"
     rules:
+      - from: 'Pimcore\'
+        to: 'OpenDxp\'
+      - from: '@Pimcore'
+        to: '@OpenDxp'
       - from: pimcore_
         to: opendxp_
+      - from: 'pimcore.'
+        to: 'opendxp.'
+      - from: 'pimcore:'
+        to: 'opendxp:'
 
   - name: js
     globs:
@@ -140,3 +155,30 @@ replacement_groups:
         to: /bundles/opendxpadmin/
       - from: /bundles/pimcore/
         to: /bundles/opendxp/
+
+  # Bundle/Kernel class names: turn the suffix "PimcoreXxxBundle" / "PimcoreKernel"
+  # / "AbstractPimcoreBundle" into "OpenDxp...". Runs after the php group, which has
+  # already converted the "Pimcore\" namespace prefix.
+  - name: bundle-classes
+    globs:
+      - "config/bundles.php"
+      - "src/Kernel.php"
+      - "src/App.php"
+    rules:
+      - from: Pimcore
+        to: OpenDxp
+
+  # Bootstrap entrypoints. bin/console has NO ".php" extension, so the php group
+  # (glob **/*.php) never matches it -> handle both explicitly here.
+  # Note: a pure rename keeps project-specific tweaks but may leave deprecated bits
+  # (e.g. a "Symfony\Component\Debug\Debug" import); compare against the OpenDXP
+  # skeleton if in doubt.
+  - name: bootstrap
+    globs:
+      - "bin/console"
+      - "public/index.php"
+    rules:
+      - from: 'Pimcore\'
+        to: 'OpenDxp\'
+      - from: PIMCORE_
+        to: OPENDXP_

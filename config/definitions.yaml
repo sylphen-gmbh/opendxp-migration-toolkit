@@ -67,8 +67,8 @@ replacement_rules:
     to: OpenDxp\Bundle\
 
   - name: php-facade
-    from: \Pimcore::
-    to: \OpenDxp::
+    from: '\Pimcore::'
+    to: '\OpenDxp::'
 
   - name: class-layout-root
     from: pimcore_root
@@ -77,6 +77,15 @@ replacement_rules:
   - name: admin-icon-class-prefix
     from: pimcore_icon_
     to: opendxp_icon_
+
+  # var/config YAML blocks (e.g. system_settings.yaml starts with "pimcore:")
+  - name: cfg-root-block
+    from: 'pimcore:'
+    to: 'opendxp:'
+
+  - name: cfg-block-prefix
+    from: pimcore_
+    to: opendxp_
 
   - name: portal-portlets
     from: pimcore.layout.portlets.

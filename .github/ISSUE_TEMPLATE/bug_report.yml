@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in the toolkit does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. actual behavior
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.3"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Minimal example
+      description: >
+        A minimal snippet of the file that was (not) matched, plus the relevant
+        rule from config/ if applicable.
+    validations:
+      required: false

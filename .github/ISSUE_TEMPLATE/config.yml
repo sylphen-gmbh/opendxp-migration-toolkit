@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: OpenDXP Upgrade Notes
+    url: https://docs.opendxp.io/docs/core-framework/Installation_and_Upgrade/Upgrade_Notes/
+    about: Official upgrade documentation for the manual migration steps.
