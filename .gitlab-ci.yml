@@ -24,16 +24,17 @@ test:
   before_script:
     - apk add --no-cache git
   script:
-    - python -m compileall -q .
-    - mkdir -p fixture/pimcore/templates fixture/pimcore/src fixture/pimcore/config fixture/pimcore/var/classes/DataObject
-    - printf '<div>{{ content }}</div>\n' > fixture/pimcore/templates/page.html.twig
-    - printf '<?php\nnamespace App;\nclass Foo {}\n' > fixture/pimcore/src/Foo.php
-    - printf 'framework:\n  secret: test\n' > fixture/pimcore/config/config.yaml
-    - printf '<?php\nreturn [];\n' > fixture/pimcore/var/classes/DataObject/Foo.php
-    - python opendxp_preflight.py fixture/pimcore
-    - python opendxp_migrate.py audit fixture/pimcore
-    - python opendxp_migrate_definitions.py audit fixture/pimcore
-    - python opendxp_migrate_db.py emit-sql > /dev/null
+    - |
+      python -m compileall -q .
+      mkdir -p fixture/pimcore/templates fixture/pimcore/src fixture/pimcore/config fixture/pimcore/var/classes/DataObject
+      printf '<div>content</div>\n' > fixture/pimcore/templates/page.html.twig
+      printf '<?php\nnamespace App;\nclass Foo {}\n' > fixture/pimcore/src/Foo.php
+      printf 'framework:\n  secret: test\n' > fixture/pimcore/config/config.yaml
+      printf '<?php\nreturn [];\n' > fixture/pimcore/var/classes/DataObject/Foo.php
+      python opendxp_preflight.py fixture/pimcore
+      python opendxp_migrate.py audit fixture/pimcore
+      python opendxp_migrate_definitions.py audit fixture/pimcore
+      python opendxp_migrate_db.py emit-sql > /dev/null
 
 # Publish the current ref to GitHub. Runs only for public/* branches and tags.
 publish-to-github:
