@@ -29,14 +29,24 @@ jobs:
           mkdir -p fixture/pimcore/templates \
                    fixture/pimcore/src \
                    fixture/pimcore/config \
-                   fixture/pimcore/var/classes/DataObject
+                   fixture/pimcore/var/classes/DataObject \
+                   fixture/deployment
           printf '<div>{{ content }}</div>\n' > fixture/pimcore/templates/page.html.twig
           printf '<?php\nnamespace App;\nclass Foo {}\n' > fixture/pimcore/src/Foo.php
           printf 'framework:\n  secret: test\n' > fixture/pimcore/config/config.yaml
           printf '<?php\nreturn [];\n' > fixture/pimcore/var/classes/DataObject/Foo.php
+          printf 'volumes:\n  - ./pimcore:/var/www/html\n' > fixture/docker-compose.yaml
+          printf '#!/bin/sh\ncd ./pimcore\n' > fixture/deployment/update.sh
+          chmod +x fixture/deployment/update.sh
 
       - name: Smoke test — preflight (read-only, no FAIL on clean tree)
         run: python opendxp_preflight.py fixture/pimcore
+
+      - name: Smoke test — migrate_root audit (expects findings, exit 1)
+        run: python opendxp_migrate_root.py fixture audit || test $? -eq 1
+
+      - name: Smoke test — migrate_root rename dry-run
+        run: python opendxp_migrate_root.py fixture rename --dry-run
 
       - name: Smoke test — migrate audit (expects clean, exit 0)
         run: python opendxp_migrate.py audit fixture/pimcore
@@ -50,6 +60,7 @@ jobs:
       - name: Smoke test — CLI help screens
         run: |
           python opendxp_preflight.py --help
+          python opendxp_migrate_root.py --help
           python opendxp_migrate.py --help
           python opendxp_migrate_definitions.py --help
           python opendxp_migrate_db.py --help

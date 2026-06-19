@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import fnmatch
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -122,6 +123,59 @@ def is_manual_review_line(line: str, markers: list[str]) -> bool:
     return any(marker in line for marker in markers)
 
 
+_DOCKER_IMAGE_LINE = re.compile(r"^\s*image:\s", re.IGNORECASE)
+_DOCKER_BIND_MOUNT_LINE = re.compile(r"^\s+-\s+\./")
+
+
+def build_app_root_path_rules(app_dir: str, target_dir: str) -> list[dict[str, str]]:
+    return [
+        {"name": "path-trailing-slash", "from": f"{app_dir}/", "to": f"{target_dir}/"},
+        {"name": "path-dot", "from": f"./{app_dir}", "to": f"./{target_dir}"},
+    ]
+
+
+def is_docker_image_line(line: str) -> bool:
+    return bool(_DOCKER_IMAGE_LINE.search(line))
+
+
+def is_docker_compose_bind_mount_line(line: str) -> bool:
+    return bool(_DOCKER_BIND_MOUNT_LINE.search(line))
+
+
+COMPOSE_FILENAMES = frozenset({"docker-compose.yaml", "docker-compose.yml"})
+
+
+def is_docker_compose_file(path: Path) -> bool:
+    return path.name in COMPOSE_FILENAMES
+
+
+def root_migrate_line_in_scope(
+    line: str,
+    file_path: Path,
+    rules: list[dict[str, str]],
+    manual_markers: list[str] | None = None,
+) -> bool:
+    if is_docker_compose_file(file_path) and not is_docker_compose_bind_mount_line(line):
+        return False
+    return line_has_app_root_path_ref(line, rules, manual_markers)
+
+
+def should_skip_root_migrate_line(line: str, manual_markers: list[str] | None = None) -> bool:
+    if manual_markers and is_manual_review_line(line, manual_markers):
+        return True
+    return is_docker_image_line(line)
+
+
+def line_has_app_root_path_ref(
+    line: str,
+    rules: list[dict[str, str]],
+    manual_markers: list[str] | None = None,
+) -> bool:
+    if should_skip_root_migrate_line(line, manual_markers):
+        return False
+    return any(rule["from"] in line for rule in rules)
+
+
 def apply_rules_to_line(
     line: str,
     rules: list[dict[str, str]],
@@ -146,16 +200,22 @@ def apply_rules_to_text(
     text: str,
     rules: list[dict[str, str]],
     manual_markers: list[str] | None = None,
+    skip: Callable[[str], bool] | None = None,
 ) -> tuple[str, list[str]]:
     markers = manual_markers or []
     lines: list[str] = []
     all_changes: list[str] = []
 
+    def line_skip(value: str) -> bool:
+        if is_manual_review_line(value, markers):
+            return True
+        return bool(skip and skip(value))
+
     for line in text.splitlines(keepends=True):
         updated, changes = apply_rules_to_line(
             line,
             rules,
-            skip=lambda value: is_manual_review_line(value, markers),
+            skip=line_skip,
         )
         lines.append(updated)
         all_changes.extend(changes)

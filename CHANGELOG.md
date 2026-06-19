@@ -4,6 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions: [SemVer](http
 
 ## [Unreleased]
 
+### Added
+
+- `opendxp_migrate_root.py` — optional parent-repo app folder rename (`pimcore/` →
+  `opendxp/`) with path patches in `docker-compose.yaml`, `.gitmodules`,
+  `deployment/`, etc. (`audit` / `rename --dry-run|--apply`).
+- `config/root.yaml` — scan scope and manual-review markers for root rename.
+- Preflight **project layout** checks: app path vs. repository root, legacy
+  `pimcore/` folder name, parent-repo path references (WARN only).
+
 ## [0.9.0] - 2026-06-17
 
 Initial public release.

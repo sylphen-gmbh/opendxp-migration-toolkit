@@ -12,7 +12,8 @@ weist über einen Preflight auf die Dinge hin, die manuell entschieden werden m�
 
 | Skript | Aufgabe | Config |
 |---|---|---|
-| `opendxp_preflight.py` | Read-only-Checks vor der Migration (Umgebung & bekannte Stolpersteine) | – |
+| `opendxp_preflight.py` | Read-only-Checks vor der Migration (Umgebung, Projekt-Layout, bekannte Stolpersteine) | – |
+| `opendxp_migrate_root.py` | Optionale App-Root-Umbenennung im Parent-Repo (`pimcore/` → `opendxp/`) und Pfad-Patches | optional via `--config` (`config/root.yaml`) |
 | `opendxp_migrate.py` | Text-Ersetzungen in Templates, CSS, PHP/YAML, Bootstrap-Dateien | `config/default.yaml` |
 | `opendxp_migrate_definitions.py` | Klassen, `var/config/`, `src/Resources/`, `config/` | `config/definitions.yaml` |
 | `opendxp_migrate_db.py` | SQL-Emitter für DB-Reste (`settings_store`, optional `migration_versions`) | – |
@@ -22,7 +23,7 @@ weist über einen Preflight auf die Dinge hin, die manuell entschieden werden m�
 Als Git-Submodule (empfohlen) oder separates Clone:
 
 ```bash
-git submodule add <repo-url> tools/opendxp-migration-toolkit
+git submodule add git@github.com:sylphen-gmbh/opendxp-migration-toolkit.git tools/opendxp-migration-toolkit
 git submodule update --init --recursive
 ```
 
@@ -75,8 +76,9 @@ Jeder Schritt unterstützt zuerst `audit`/`--dry-run`, dann `--apply`.
 Meldet die Blocker, die die Rename-/Patch-Skripte bewusst nicht abdecken: PHP-Version,
 composer-Pakete (verbliebene `pimcore/*`, Symfony 6.x), Bootstrap-Dateien,
 `type: annotation`, `enable_authenticator_manager`, `ROLE_PIMCORE_*`,
-`symfony/templating`, Bundle-Klassen sowie entfernte APIs (`pimcore_cache()`,
-`formatLocalized()`).
+`symfony/templating`, Bundle-Klassen, entfernte APIs (`pimcore_cache()`,
+`formatLocalized()`), und ob das **App-Verzeichnis** (z. B. `./pimcore`) übergeben
+wurde — nicht das Repository-Root.
 
 ```bash
 python3 tools/opendxp-migration-toolkit/opendxp_preflight.py ./pimcore
@@ -84,6 +86,55 @@ python3 tools/opendxp-migration-toolkit/opendxp_preflight.py ./pimcore
 
 Exit `1`, sobald ein `FAIL` vorliegt (CI-tauglich), sonst `0`. Mindest-PHP-Version
 über `--min-php` (Default `8.3`).
+
+#### Projekt-Layout (App-Pfad vs. Repository-Root)
+
+Vor den PHP-/Composer-Checks prüft der Preflight, **welches Verzeichnis übergeben
+wurde** und ob eine spätere **`pimcore/` → `opendxp/`-Ordner-Umbenennung** Dateien
+außerhalb des App-Baums betreffen würde. Diese Funde sind nur **WARN** — sie
+führen nicht zum Abbruch.
+
+| Check | Level | Wann | Bedeutung |
+|---|---|---|---|
+| `project root` | WARN | **Repository-Root** übergeben (z. B. `.`) und `./pimcore/` oder `./opendxp/` sieht wie die App aus | Stattdessen `./pimcore` (oder `./opendxp`) übergeben — die Migrate-Skripte erwarten das App-Verzeichnis |
+| `project root` | OK | Pfad enthält `composer.json` und `bin/console` (oder `public/index.php`) | Korrektes App-Verzeichnis |
+| `app folder name` | WARN | App-Ordner heißt noch `pimcore/` | **Optional** — OpenDXP verlangt keine Umbenennung nach `opendxp/`. Alle Toolkit-Befehle weiter mit `./pimcore` aufrufen, bis ihr euch entscheidet |
+| `app folder name` | OK | Ordner heißt `opendxp/` oder individuell | — |
+| `parent path references` | WARN | Dateien **außerhalb** der App (z. B. `docker-compose.yaml`, `.gitmodules`, `deployment/*`) enthalten `pimcore/` | `opendxp_migrate_root.py` vom **Repository-Root** aus für Audit/Rename nutzen (siehe [Optional: App-Root-Umbenennung](#optional-app-root-umbenennung-parent-repository)) |
+
+Beispiel — falscher Pfad (Repository-Root):
+
+```bash
+python3 tools/opendxp-migration-toolkit/opendxp_preflight.py .
+# [WARN] project root: not an app directory — pass ./pimcore ...
+```
+
+Beispiel — korrekter Pfad, Legacy-Ordnername:
+
+```bash
+python3 tools/opendxp-migration-toolkit/opendxp_preflight.py ./pimcore
+# [ OK ] project root: valid app directory
+# [WARN] app folder name: still `pimcore/` — OpenDXP does not require renaming ...
+# [WARN] parent path references: N file(s) outside the app reference `pimcore/` ...
+```
+
+### Optional: App-Root-Umbenennung (Parent-Repository)
+
+Nur wenn ihr `pimcore/` → `opendxp/` auf **Repository-Ebene** umbenennen wollt.
+OpenDXP verlangt das nicht — der Preflight **warnt** nur. Vom Repository-Root aus
+(dort wo `docker-compose.yaml` liegt) aufrufen, nicht aus dem App-Ordner. Den
+App-Baum selbst bearbeiten die Migrate-Skripte in den folgenden Schritten.
+
+```bash
+python3 tools/opendxp-migration-toolkit/opendxp_migrate_root.py . audit
+python3 tools/opendxp-migration-toolkit/opendxp_migrate_root.py . rename --dry-run
+python3 tools/opendxp-migration-toolkit/opendxp_migrate_root.py . rename --apply
+```
+
+Nach `--apply` Preflight und Migrate-Skripte mit `./opendxp` (oder eurem
+`--target-dir`) aufrufen. Submodule-Pfade (z. B. in `.gitmodules`) ggf. anpassen.
+Zeilen mit externen Pimcore-URLs werden beim automatischen Patchen übersprungen —
+manuell prüfen (siehe [Bewusst nicht automatisiert](#bewusst-nicht-automatisiert)).
 
 ### 1. Templates / CSS / Code
 
@@ -160,10 +211,12 @@ bin/console app:migrate-version-files
 
 | Skript | Pfade |
 |---|---|
+| `opendxp_migrate_root.py` | Parent-Repo: `docker-compose.yaml`, `.gitmodules`, `README.md`, `deployment/**` (nicht App-Ordner oder `tools/**`) |
 | `opendxp_migrate.py` | `templates/`, `public/static/css/`, `src/`, `config/`, `bin/`, `public/index.php` |
 | `opendxp_migrate_definitions.py` | `var/classes/`, `var/config/`, `src/Resources/`, `config/` |
 
-Standardmäßig ausgeschlossen: `vendor/**`, `var/**` bzw. `var/cache/**`,
+Der Scan-Umfang von `opendxp_migrate_root.py` ist per `--config` konfigurierbar (siehe `config/root.yaml`).
+Standardmäßig ausgeschlossen für die Migrate-Skripte: `vendor/**`, `var/**` bzw. `var/cache/**`,
 `node_modules/**`, `src/Migrations/**` (bewusste Pimcore-Referenzen),
 generierte Routes (`**/fos_js_routes.js`) und Third-Party (`**/ckeditor-plugins/**`).
 
@@ -254,14 +307,18 @@ meldet die meisten davon:
 
 - Generierte Assets/Routes (`fos_js_routes.js`)
 - Projekteigene Klassen (z. B. `peditmode`)
-- Ordnername des App-Verzeichnisses (nur Struktur, kein Muss)
-- Inhalts-Strings mit „Pimcore" im Namen (manuelle Sichtung)
+- Datenbank-/Service-**Namen**, die noch `pimcore` enthalten (z. B. MySQL-User/DB in
+  `docker-compose.yaml`) — Pfad-Strings patcht `opendxp_migrate_root.py`,
+  Credentials und DSNs manuell entscheiden
+- Externe Pimcore-URLs und Inhalts-Strings mit „Pimcore" im Namen (manuelle Sichtung)
 
 ## Exit-Codes
 
 | Befehl | Bedeutung |
 |---|---|
 | `preflight` | `0` = kein `FAIL`, `1` = mindestens ein `FAIL`, `2` = falscher Aufruf |
+| `migrate_root audit` | `0` = sauber, `1` = Funde, `2` = falscher Aufruf |
+| `migrate_root rename` | `0` = durchgelaufen, `1` = Layout-/Validierungsfehler, `2` = falscher Aufruf |
 | `audit` | `0` = sauber, `1` = Funde |
 | `rename` / `patch` | `0` = durchgelaufen |
 | `migrate_db emit-sql` | `0` = SQL ausgegeben |
