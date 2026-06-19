@@ -1,0 +1,29 @@
+# Parent repository scope for optional app root rename (pimcore/ -> opendxp/).
+# Paths are relative to the repository root passed on the CLI.
+#
+# The app directory itself is never scanned here — use opendxp_migrate*.py inside
+# the app folder. --app-dir / --target-dir on the CLI override the default names.
+
+root_files:
+  - docker-compose.yaml
+  - docker-compose.yml
+  - .gitmodules
+  - README.md
+
+scan_paths:
+  - deployment
+
+exclude_globs:
+  - vendor/**
+  - node_modules/**
+  - tools/**
+  - mysql_data/**
+  - .git/**
+  - "**/__pycache__/**"
+  - "**/*.sql.gz"
+  - "**/*.tgz"
+
+manual_review_substrings:
+  - demo.pimcore.org
+  - pimcore.com
+  - pimcore.org

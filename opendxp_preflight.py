@@ -6,6 +6,10 @@ Read-only environment & repository checks. Run this FIRST, before `composer upda
 to surface the blockers the rename/patch scripts deliberately do NOT handle
 (PHP version, composer packages, bootstrap files, routing/security/templating).
 
+Also checks project layout: app directory vs. repository root, optional legacy
+`pimcore/` folder name, and parent-repo path references (for optional
+`opendxp_migrate_root.py`).
+
 Usage:
   opendxp_preflight.py /path/to/project [--min-php 8.3]
 
@@ -25,6 +29,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from migrate_lib import build_app_root_path_rules, root_migrate_line_in_scope
 
 OK = "OK"
 WARN = "WARN"
@@ -85,6 +91,83 @@ def check_php_version(min_php: tuple[int, int]) -> Result:
             f"(e.g. pimcore/pimcore:php8.3-debug-latest).",
         )
     return Result(OK, "PHP version", out)
+
+
+def is_app_root(path: Path) -> bool:
+    if not (path / "composer.json").is_file():
+        return False
+    return (path / "bin/console").is_file() or (path / "public/index.php").is_file()
+
+
+def scan_parent_path_refs(parent: Path, app_dir_name: str) -> list[str]:
+    """Parent-repo files with path references that root rename would patch."""
+    rules = build_app_root_path_rules(app_dir_name, "opendxp")
+    candidates: list[Path] = [
+        parent / "docker-compose.yaml",
+        parent / "docker-compose.yml",
+        parent / ".gitmodules",
+    ]
+    deployment = parent / "deployment"
+    if deployment.is_dir():
+        candidates.extend(p for p in deployment.iterdir() if p.is_file())
+    hits: list[str] = []
+    for path in candidates:
+        if not path.is_file():
+            continue
+        for line in read_text(path).splitlines():
+            if root_migrate_line_in_scope(line, path, rules):
+                hits.append(path.relative_to(parent).as_posix())
+                break
+    return hits
+
+
+def check_project_layout(root: Path) -> list[Result]:
+    results: list[Result] = []
+
+    if not is_app_root(root):
+        for name in ("pimcore", "opendxp"):
+            child = root / name
+            if child.is_dir() and is_app_root(child):
+                return [Result(
+                    WARN, "project root",
+                    f"not an app directory — pass ./{name} "
+                    f"(e.g. opendxp_preflight.py ./{name})",
+                )]
+        return [Result(
+            WARN, "project root",
+            "does not look like an app root "
+            "(expected composer.json and bin/console or public/index.php)",
+        )]
+
+    results.append(Result(OK, "project root", "valid app directory"))
+
+    name = root.name
+    if name == "pimcore":
+        results.append(Result(
+            WARN, "app folder name",
+            "still `pimcore/` — OpenDXP does not require renaming to `opendxp/`. "
+            "An optional parent-repo rename is available via "
+            "`opendxp_migrate_root.py` (run from the repository root). "
+            "Keep using this path for all toolkit commands until then.",
+        ))
+    elif name == "opendxp":
+        results.append(Result(OK, "app folder name", "`opendxp/`"))
+    else:
+        results.append(Result(OK, "app folder name", f"custom directory `{name}/`"))
+
+    if name == "pimcore":
+        parent_refs = scan_parent_path_refs(root.parent, name)
+        if parent_refs:
+            sample = ", ".join(parent_refs[:3])
+            extra = f" (+{len(parent_refs) - 3} more)" if len(parent_refs) > 3 else ""
+            results.append(Result(
+                WARN, "parent path references",
+                f"{len(parent_refs)} file(s) outside the app reference `{name}/` "
+                f"({sample}{extra}) — use `opendxp_migrate_root.py audit` "
+                f"from the repository root to review a rename",
+            ))
+
+    return results
 
 
 def check_composer(root: Path) -> list[Result]:
@@ -242,6 +325,7 @@ def check_bundle_classes(root: Path) -> list[Result]:
 
 def run(root: Path, min_php: tuple[int, int]) -> int:
     results: list[Result] = []
+    results.extend(check_project_layout(root))
     results.append(check_php_version(min_php))
     results.extend(check_composer(root))
     results.extend(check_bootstrap(root))

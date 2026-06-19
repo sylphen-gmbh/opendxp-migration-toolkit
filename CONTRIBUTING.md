@@ -5,8 +5,10 @@ small, dependency-light helper toolkit — contributions that keep it simple and
 reviewable are very welcome.
 
 To contribute, fork this repository on GitHub, create a branch in your fork, and
-open a pull request against `main`. Maintainers: the internal GitLab ↔ public
-GitHub branching and release workflow is documented in [`PUBLISHING.md`](PUBLISHING.md).
+open a pull request against `main`.
+
+Maintainers: see the internal **GitLab Wiki** (branching, sync, releases) and
+[`PUBLISHING.md`](PUBLISHING.md).
 
 ## Ground rules
 
