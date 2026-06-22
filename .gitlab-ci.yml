@@ -24,12 +24,18 @@ test:
   script:
     - |
       python -m compileall -q .
-      mkdir -p fixture/pimcore/templates fixture/pimcore/src fixture/pimcore/config fixture/pimcore/var/classes/DataObject
+      mkdir -p fixture/pimcore/templates fixture/pimcore/src fixture/pimcore/config \
+               fixture/pimcore/var/classes/DataObject fixture/deployment
       printf '<div>content</div>\n' > fixture/pimcore/templates/page.html.twig
       printf '<?php\nnamespace App;\nclass Foo {}\n' > fixture/pimcore/src/Foo.php
       printf 'framework:\n  secret: test\n' > fixture/pimcore/config/config.yaml
       printf '<?php\nreturn [];\n' > fixture/pimcore/var/classes/DataObject/Foo.php
+      printf 'volumes:\n  - ./pimcore:/var/www/html\n' > fixture/docker-compose.yaml
+      printf '#!/bin/sh\ncd ./pimcore\n' > fixture/deployment/update.sh
+      chmod +x fixture/deployment/update.sh
       python opendxp_preflight.py fixture/pimcore
+      python opendxp_migrate_root.py fixture audit || test $? -eq 1
+      python opendxp_migrate_root.py fixture rename --dry-run
       python opendxp_migrate.py audit fixture/pimcore
       python opendxp_migrate_definitions.py audit fixture/pimcore
       python opendxp_migrate_db.py emit-sql > /dev/null
@@ -37,7 +43,9 @@ test:
 # Publish the current ref to GitHub. Runs only for public/* branches and tags.
 publish-to-github:
   stage: publish
-  image: alpine/git:2.47.2
+  image:
+    name: alpine/git:2.47.2
+    entrypoint: [""]
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^public\//'
     - if: '$CI_COMMIT_TAG'
