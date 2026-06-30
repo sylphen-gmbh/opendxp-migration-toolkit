@@ -4,10 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions: [SemVer](http
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-06-20
+
+Documentation ([#3](https://github.com/sylphen-gmbh/opendxp-migration-toolkit/issues/3)).
+
 ### Changed
 
-- README: clarify parent-repo layout for submodule integration and Docker usage
-  ([#3](https://github.com/sylphen-gmbh/opendxp-migration-toolkit/issues/3)).
+- README: document repo layouts **A** (app in `pimcore/` subfolder) and **B** (app at
+  repo root) for submodule integration and Docker usage; clarify wrong
+  `pimcore/tools/…` placement.
 
 ## [0.9.1] - 2026-06-19
 
@@ -44,5 +49,6 @@ Initial public release.
 - Configurable rule sets in `config/default.yaml` and `config/definitions.yaml`.
 - English `README.md` and German `README.de.md` with a language switcher.
 
+[0.9.2]: https://github.com/sylphen-gmbh/opendxp-migration-toolkit/releases/tag/v0.9.2
 [0.9.1]: https://github.com/sylphen-gmbh/opendxp-migration-toolkit/releases/tag/v0.9.1
 [0.9.0]: https://github.com/sylphen-gmbh/opendxp-migration-toolkit/releases/tag/v0.9.0
