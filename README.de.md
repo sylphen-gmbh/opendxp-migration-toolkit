@@ -20,12 +20,47 @@ weist über einen Preflight auf die Dinge hin, die manuell entschieden werden m�
 
 ## Einbindung
 
-Als Git-Submodule (empfohlen) oder separates Clone:
+Das Toolkit liegt unter **`tools/opendxp-migration-toolkit/` im Repository-Root**
+(dort, wo meist `docker-compose.yaml` liegt) — **nicht verschachtelt** unter
+`pimcore/tools/…`.
+
+**Layout A — App in einem Unterordner** (typisch bei Docker-Setups):
+
+```
+my-project/                         ← Repo-Root: Befehle von hier ($PWD)
+├── tools/opendxp-migration-toolkit/
+├── pimcore/                           ← App-Ordner
+│   ├── composer.json
+│   └── bin/console
+└── docker-compose.yaml
+```
+
+**Layout B — App ist der Repo-Root** (`composer.json` und `bin/console` oben):
+
+```
+my-project/                         ← Repo-Root = App-Ordner ($PWD)
+├── tools/opendxp-migration-toolkit/
+├── composer.json
+├── bin/console
+└── docker-compose.yaml
+```
+
+Als Git-Submodule (empfohlen) oder separates Clone — **vom Repo-Root aus**:
 
 ```bash
+cd /path/to/my-project
 git submodule add git@github.com:sylphen-gmbh/opendxp-migration-toolkit.git tools/opendxp-migration-toolkit
 git submodule update --init --recursive
 ```
+
+| Layout | App-Pfad für Skripte |
+|---|---|
+| **A** — Unterordner `pimcore/` (oder `opendxp/`) | `./pimcore` |
+| **B** — App auf Repo-Root | `.` |
+| **Falsch** — Submodule nur in der App (`pimcore/tools/…`) | Submodule an Repo-Root verschieben (Git-Schritte unten) |
+
+`opendxp_migrate_root.py` ist für **Layout A** gedacht (`pimcore/` → `opendxp/` auf
+Repo-Ebene). **Layout B** braucht diesen Schritt nicht.
 
 ## Voraussetzungen
 
@@ -41,10 +76,18 @@ pip install pyyaml
 
 Soll auf dem Host kein Python installiert werden, läuft das Toolkit in einem
 kurzlebigen Container. Das Repo wird nur eingehängt, der Container via `--rm`
-verworfen — es bleibt nichts auf dem Host. Aufruf aus dem Repo-Root (dort, wo
-`tools/` und der App-Ordner liegen):
+verworfen — es bleibt nichts auf dem Host.
+
+**`$PWD` muss der Repo-Root sein** mit `tools/opendxp-migration-toolkit/` und der App
+(`composer.json` unter `./` oder `./pimcore/`). Nicht vorher in einen Unterordner
+wechseln — sonst fehlt `/work/tools/…` im Container.
+
+Die Beispiele unten nutzen **Layout A** (`./pimcore`). Bei **Layout B** stattdessen
+`.` statt `./pimcore` übergeben.
 
 ```bash
+cd /path/to/my-project          # Repo-Root
+
 # Read-only (nur Python-Standardbibliothek, kein PyYAML nötig)
 docker run --rm -v "$PWD":/work -w /work python:3.12-alpine \
   python3 tools/opendxp-migration-toolkit/opendxp_preflight.py ./pimcore
