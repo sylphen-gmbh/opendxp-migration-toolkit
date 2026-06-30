@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versions: [SemVer](http
 
 ## [Unreleased]
 
+### Changed
+
+- README: clarify parent-repo layout for submodule integration and Docker usage
+  ([#3](https://github.com/sylphen-gmbh/opendxp-migration-toolkit/issues/3)).
+
 ## [0.9.1] - 2026-06-19
 
 Optional app root rename ([#1](https://github.com/sylphen-gmbh/opendxp-migration-toolkit/issues/1)).
